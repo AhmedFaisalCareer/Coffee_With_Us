@@ -6,9 +6,9 @@
 
 ## 🌐 Live Demo
 
-🚀 **Live Demo:** Add your Streamlit deployment link here
+🚀 **Live Demo:**http://coffeewithus-49ibgzif7qvnrov6rtofpm.streamlit.app/
 
-📂 **GitHub Repository:** Add your GitHub repository link here
+📂 **GitHub Repository:** https://github.com/AhmedFaisalCareer/Coffee_With_Us
 
 ---
 
