@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 from supabase import create_client
 
+
 # =========================================================
 # CONFIG
 # =========================================================
@@ -20,6 +21,7 @@ st.set_page_config(
 DB_NAME = "coffee_with_us.db"
 ADMIN_PASSWORD = "123456"
 
+
 # =========================================================
 # SUPABASE CONNECTION
 # =========================================================
@@ -33,12 +35,15 @@ def get_supabase():
 
 supabase = get_supabase()
 
+
 # =========================================================
 # CUSTOM CSS
 # =========================================================
 
-st.markdown("""
-<style>
+st.markdown(
+    """
+    <style>
+
     .stApp {
         background: #faf7f2;
     }
@@ -76,6 +81,7 @@ st.markdown("""
         border: 1px solid #eadfd6;
         margin-bottom: 15px;
         box-shadow: 0 5px 18px rgba(60, 35, 20, 0.06);
+        min-height: 275px;
     }
 
     .product-icon {
@@ -94,6 +100,7 @@ st.markdown("""
         font-weight: bold;
         color: #3b2117;
         margin-top: 20px;
+        margin-bottom: 10px;
     }
 
     .order-box {
@@ -182,8 +189,12 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.25);
         border-radius: 10px;
     }
-</style>
-""", unsafe_allow_html=True)
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # =========================================================
 # DEFAULT MENU
@@ -222,8 +233,9 @@ DEFAULT_PRODUCTS = [
     ("Strawberry Cooler", "Cold Drinks", "Sweet strawberry cooler.", 350, 130, "🍓", 25)
 ]
 
+
 # =========================================================
-# DATABASE SETUP / MIGRATION
+# SQLITE MIGRATION
 # =========================================================
 
 def sqlite_has_data():
@@ -231,12 +243,14 @@ def sqlite_has_data():
         conn = sqlite3.connect(DB_NAME)
         cur = conn.cursor()
 
-        cur.execute("""
+        cur.execute(
+            """
             SELECT name
             FROM sqlite_master
             WHERE type='table'
             AND name IN ('products', 'orders', 'settings')
-        """)
+            """
+        )
 
         tables = {row[0] for row in cur.fetchall()}
 
@@ -247,10 +261,10 @@ def sqlite_has_data():
         cur.execute("SELECT COUNT(*) FROM products")
         product_count = cur.fetchone()[0]
 
-        cur.execute("SELECT COUNT(*) FROM orders")
         order_count = 0
 
         if "orders" in tables:
+            cur.execute("SELECT COUNT(*) FROM orders")
             order_count = cur.fetchone()[0]
 
         conn.close()
@@ -262,21 +276,23 @@ def sqlite_has_data():
 
 
 def migrate_sqlite_to_supabase():
-    """
-    One-time safety migration.
-
-    If the old SQLite database exists and Supabase is empty,
-    copy old products, orders and settings to Supabase.
-    """
 
     try:
-        existing_products = supabase.table("products").select(
-            "id"
-        ).limit(1).execute()
+        existing_products = (
+            supabase
+            .table("products")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
 
-        existing_orders = supabase.table("orders").select(
-            "id"
-        ).limit(1).execute()
+        existing_orders = (
+            supabase
+            .table("orders")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
 
         supabase_has_products = bool(existing_products.data)
         supabase_has_orders = bool(existing_orders.data)
@@ -315,9 +331,12 @@ def migrate_sqlite_to_supabase():
                 })
 
             if product_data:
-                supabase.table("products").upsert(
-                    product_data
-                ).execute()
+                (
+                    supabase
+                    .table("products")
+                    .upsert(product_data)
+                    .execute()
+                )
 
         except Exception:
             pass
@@ -351,9 +370,12 @@ def migrate_sqlite_to_supabase():
                 })
 
             if order_data:
-                supabase.table("orders").upsert(
-                    order_data
-                ).execute()
+                (
+                    supabase
+                    .table("orders")
+                    .upsert(order_data)
+                    .execute()
+                )
 
         except Exception:
             pass
@@ -375,9 +397,12 @@ def migrate_sqlite_to_supabase():
                 })
 
             if settings_data:
-                supabase.table("settings").upsert(
-                    settings_data
-                ).execute()
+                (
+                    supabase
+                    .table("settings")
+                    .upsert(settings_data)
+                    .execute()
+                )
 
         except Exception:
             pass
@@ -389,33 +414,41 @@ def migrate_sqlite_to_supabase():
 
 
 def initialize_supabase():
+
     try:
-        # Check if products already exist
-        result = supabase.table("products").select(
-            "id"
-        ).limit(1).execute()
+
+        result = (
+            supabase
+            .table("products")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
 
         if result.data:
             return
 
-        # First try to preserve old SQLite data
         migrate_sqlite_to_supabase()
 
-        # Check again after migration
-        result = supabase.table("products").select(
-            "id"
-        ).limit(1).execute()
+        result = (
+            supabase
+            .table("products")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
 
         if result.data:
             return
 
         # -------------------------------------------------
-        # Insert default menu
+        # DEFAULT PRODUCTS
         # -------------------------------------------------
 
         product_data = []
 
         for product in DEFAULT_PRODUCTS:
+
             product_data.append({
                 "name": product[0],
                 "category": product[1],
@@ -427,41 +460,62 @@ def initialize_supabase():
                 "available": True
             })
 
-        supabase.table("products").insert(
-            product_data
-        ).execute()
+        (
+            supabase
+            .table("products")
+            .insert(product_data)
+            .execute()
+        )
 
         # -------------------------------------------------
-        # Default settings
+        # DEFAULT SETTINGS
         # -------------------------------------------------
 
         settings = [
-            {"key": "tax_rate", "value": "5"},
-            {"key": "delivery_fee", "value": "150"},
-            {"key": "cafe_status", "value": "Open"}
+            {
+                "key": "tax_rate",
+                "value": "5"
+            },
+            {
+                "key": "delivery_fee",
+                "value": "150"
+            },
+            {
+                "key": "cafe_status",
+                "value": "Open"
+            }
         ]
 
-        supabase.table("settings").upsert(
-            settings
-        ).execute()
+        (
+            supabase
+            .table("settings")
+            .upsert(settings)
+            .execute()
+        )
 
     except Exception as e:
+
         st.error(
             "Database connection error. "
             "Please check your Supabase settings."
         )
+
         st.code(str(e))
+
         st.stop()
 
 
 initialize_supabase()
+
 
 # =========================================================
 # DATABASE HELPERS
 # =========================================================
 
 def get_setting(key):
+
     try:
+
         result = (
             supabase
             .table("settings")
@@ -481,22 +535,32 @@ def get_setting(key):
 
 
 def set_setting(key, value):
-    supabase.table("settings").upsert({
-        "key": key,
-        "value": str(value)
-    }).execute()
+
+    (
+        supabase
+        .table("settings")
+        .upsert({
+            "key": key,
+            "value": str(value)
+        })
+        .execute()
+    )
 
 
 def get_products(available_only=False):
-    query = supabase.table("products").select("*")
+
+    query = (
+        supabase
+        .table("products")
+        .select("*")
+    )
 
     if available_only:
-        query = query.eq(
-            "available",
-            True
-        ).gt(
-            "stock",
-            0
+
+        query = (
+            query
+            .eq("available", True)
+            .gt("stock", 0)
         )
 
     result = query.execute()
@@ -504,6 +568,7 @@ def get_products(available_only=False):
     data = result.data or []
 
     if not data:
+
         return pd.DataFrame(
             columns=[
                 "id",
@@ -520,12 +585,17 @@ def get_products(available_only=False):
 
     df = pd.DataFrame(data)
 
-    return df.sort_values(
-        ["category", "name"]
-    ).reset_index(drop=True)
+    return (
+        df
+        .sort_values(
+            ["category", "name"]
+        )
+        .reset_index(drop=True)
+    )
 
 
 def get_orders():
+
     result = (
         supabase
         .table("orders")
@@ -537,6 +607,7 @@ def get_orders():
     data = result.data or []
 
     if not data:
+
         return pd.DataFrame(
             columns=[
                 "id",
@@ -560,6 +631,7 @@ def get_orders():
 
 
 def generate_order_code():
+
     result = (
         supabase
         .table("orders")
@@ -570,14 +642,20 @@ def generate_order_code():
     )
 
     if result.data:
-        next_id = int(result.data[0]["id"]) + 1
+
+        next_id = (
+            int(result.data[0]["id"]) + 1
+        )
+
     else:
+
         next_id = 1
 
     return f"CWU-{next_id:04d}"
 
 
 def hash_password(password):
+
     return hashlib.sha256(
         password.encode()
     ).hexdigest()
@@ -596,6 +674,9 @@ if "admin_logged_in" not in st.session_state:
 if "last_order" not in st.session_state:
     st.session_state.last_order = None
 
+if "page_override" not in st.session_state:
+    st.session_state.page_override = None
+
 
 # =========================================================
 # SIDEBAR
@@ -604,7 +685,10 @@ if "last_order" not in st.session_state:
 with st.sidebar:
 
     st.markdown("## ☕ Coffee With Us")
-    st.caption("Fresh coffee. Fresh moments.")
+
+    st.caption(
+        "Fresh coffee. Fresh moments."
+    )
 
     st.divider()
 
@@ -632,7 +716,9 @@ with st.sidebar:
             use_container_width=True
         ):
 
-            if hash_password(admin_password) == hash_password(
+            if hash_password(
+                admin_password
+            ) == hash_password(
                 ADMIN_PASSWORD
             ):
 
@@ -662,6 +748,7 @@ with st.sidebar:
             ):
 
                 st.session_state.page_override = "admin"
+
                 st.rerun()
 
             if st.button(
@@ -671,6 +758,7 @@ with st.sidebar:
 
                 st.session_state.admin_logged_in = False
                 st.session_state.page_override = None
+
                 st.rerun()
 
 
@@ -678,7 +766,9 @@ with st.sidebar:
 # ADMIN ROUTING
 # =========================================================
 
-if st.session_state.get("page_override") == "admin":
+if st.session_state.get(
+    "page_override"
+) == "admin":
 
     if not st.session_state.admin_logged_in:
 
@@ -688,21 +778,26 @@ if st.session_state.get("page_override") == "admin":
 
         st.stop()
 
-    st.markdown("""
-    <div class="hero">
-        <h1>🔐 Admin Dashboard</h1>
-        <p>Coffee With Us management center</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="hero">
+            <h1>🔐 Admin Dashboard</h1>
+            <p>Coffee With Us management center</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    admin_tab = st.tabs([
-        "📊 Dashboard",
-        "📦 Orders",
-        "🍔 Products",
-        "📋 Inventory",
-        "👥 Customers",
-        "⚙️ Settings"
-    ])
+    admin_tab = st.tabs(
+        [
+            "📊 Dashboard",
+            "📦 Orders",
+            "🍔 Products",
+            "📋 Inventory",
+            "👥 Customers",
+            "⚙️ Settings"
+        ]
+    )
 
     # =====================================================
     # ADMIN DASHBOARD
@@ -719,13 +814,13 @@ if st.session_state.get("page_override") == "admin":
         if not orders_df.empty:
 
             orders_df["created_at"] = (
-                orders_df["created_at"].astype(str)
+                orders_df["created_at"]
+                .astype(str)
             )
 
             today_orders = orders_df[
-                orders_df["created_at"].str.startswith(
-                    today
-                )
+                orders_df["created_at"]
+                .str.startswith(today)
             ]
 
             active_today = today_orders[
@@ -897,16 +992,20 @@ if st.session_state.get("page_override") == "admin":
 
             if sales:
 
-                best_df = pd.DataFrame(
-                    list(sales.items()),
-                    columns=[
-                        "Product",
-                        "Quantity"
-                    ]
-                ).sort_values(
-                    "Quantity",
-                    ascending=False
-                ).head(10)
+                best_df = (
+                    pd.DataFrame(
+                        list(sales.items()),
+                        columns=[
+                            "Product",
+                            "Quantity"
+                        ]
+                    )
+                    .sort_values(
+                        "Quantity",
+                        ascending=False
+                    )
+                    .head(10)
+                )
 
                 st.dataframe(
                     best_df,
@@ -952,120 +1051,119 @@ if st.session_state.get("page_override") == "admin":
             if status_filter != "All":
 
                 filtered = filtered[
-                    filtered["status"] ==
-                    status_filter
+                    filtered["status"] == status_filter
                 ]
 
             for _, order in filtered.iterrows():
 
-                with st.container():
+                st.markdown(
+                    f"""
+                    <div class="order-box">
+                        <h3>
+                            🧾 {order['order_code']}
+                        </h3>
 
-                    st.markdown(
-                        f"""
-                        <div class="order-box">
-                            <h3>
-                                🧾 {order['order_code']}
-                            </h3>
+                        <b>Customer:</b>
+                        {order['customer_name']}<br>
 
-                            <b>Customer:</b>
-                            {order['customer_name']}<br>
+                        <b>Phone:</b>
+                        {order['phone'] or 'Not provided'}<br>
 
-                            <b>Phone:</b>
-                            {order['phone'] or 'Not provided'}<br>
+                        <b>Order Time:</b>
+                        {order['created_at']}<br>
 
-                            <b>Order Time:</b>
-                            {order['created_at']}<br>
+                        <b>Total:</b>
+                        Rs. {float(order['total']):,.0f}<br>
 
-                            <b>Total:</b>
-                            Rs. {float(order['total']):,.0f}<br>
+                        <b>Current Status:</b>
+                        {order['status']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-                            <b>Current Status:</b>
-                            {order['status']}
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                st.write("**Items:**")
+
+                item_rows = []
+
+                for item in str(
+                    order["items"]
+                ).split("|||"):
+
+                    if not item:
+                        continue
+
+                    parts = item.split("::")
+
+                    if len(parts) >= 4:
+
+                        item_rows.append({
+                            "Product": parts[0],
+                            "Price": float(parts[1]),
+                            "Quantity": int(parts[2]),
+                            "Total": float(parts[3])
+                        })
+
+                if item_rows:
+
+                    st.dataframe(
+                        pd.DataFrame(item_rows),
+                        use_container_width=True,
+                        hide_index=True
                     )
 
-                    st.write(
-                        "**Items:**"
+                col1, col2 = st.columns(
+                    [2, 1]
+                )
+
+                statuses = [
+                    "Received",
+                    "Preparing",
+                    "In the Oven",
+                    "Ready",
+                    "Delivered",
+                    "Cancelled"
+                ]
+
+                with col1:
+
+                    new_status = st.selectbox(
+                        "Change Status",
+                        statuses,
+                        index=statuses.index(
+                            order["status"]
+                        ),
+                        key=f"status_{order['id']}"
                     )
 
-                    item_rows = []
+                with col2:
 
-                    for item in str(
-                        order["items"]
-                    ).split("|||"):
+                    if st.button(
+                        "Update",
+                        key=f"update_{order['id']}",
+                        use_container_width=True
+                    ):
 
-                        if not item:
-                            continue
-
-                        parts = item.split("::")
-
-                        if len(parts) >= 4:
-
-                            item_rows.append({
-                                "Product": parts[0],
-                                "Price": float(parts[1]),
-                                "Quantity": int(parts[2]),
-                                "Total": float(parts[3])
-                            })
-
-                    if item_rows:
-
-                        st.dataframe(
-                            pd.DataFrame(item_rows),
-                            use_container_width=True,
-                            hide_index=True
-                        )
-
-                    col1, col2 = st.columns(
-                        [2, 1]
-                    )
-
-                    statuses = [
-                        "Received",
-                        "Preparing",
-                        "In the Oven",
-                        "Ready",
-                        "Delivered",
-                        "Cancelled"
-                    ]
-
-                    with col1:
-
-                        new_status = st.selectbox(
-                            "Change Status",
-                            statuses,
-                            index=statuses.index(
-                                order["status"]
-                            ),
-                            key=f"status_{order['id']}"
-                        )
-
-                    with col2:
-
-                        if st.button(
-                            "Update",
-                            key=f"update_{order['id']}",
-                            use_container_width=True
-                        ):
-
-                            supabase.table(
-                                "orders"
-                            ).update({
+                        (
+                            supabase
+                            .table("orders")
+                            .update({
                                 "status": new_status
-                            }).eq(
+                            })
+                            .eq(
                                 "id",
                                 int(order["id"])
-                            ).execute()
-
-                            st.success(
-                                "Order updated."
                             )
+                            .execute()
+                        )
 
-                            st.rerun()
+                        st.success(
+                            "Order updated."
+                        )
 
-                    st.divider()
+                        st.rerun()
+
+                st.divider()
 
     # =====================================================
     # ADMIN PRODUCTS
@@ -1184,18 +1282,21 @@ if st.session_state.get("page_override") == "admin":
 
                     else:
 
-                        supabase.table(
-                            "products"
-                        ).insert({
-                            "name": name,
-                            "category": category,
-                            "description": description,
-                            "price": price,
-                            "cost": cost,
-                            "icon": icon,
-                            "stock": stock,
-                            "available": True
-                        }).execute()
+                        (
+                            supabase
+                            .table("products")
+                            .insert({
+                                "name": name,
+                                "category": category,
+                                "description": description,
+                                "price": price,
+                                "cost": cost,
+                                "icon": icon,
+                                "stock": stock,
+                                "available": True
+                            })
+                            .execute()
+                        )
 
                         st.success(
                             "Product added successfully."
@@ -1227,8 +1328,7 @@ if st.session_state.get("page_override") == "admin":
                 )
 
                 product = product_df[
-                    product_df["id"] ==
-                    selected_id
+                    product_df["id"] == selected_id
                 ].iloc[0]
 
                 with st.form("edit_product"):
@@ -1296,21 +1396,25 @@ if st.session_state.get("page_override") == "admin":
 
                     if save:
 
-                        supabase.table(
-                            "products"
-                        ).update({
-                            "name": new_name,
-                            "category": new_category,
-                            "description": new_description,
-                            "price": new_price,
-                            "cost": new_cost,
-                            "icon": new_icon,
-                            "stock": new_stock,
-                            "available": new_available
-                        }).eq(
-                            "id",
-                            int(selected_id)
-                        ).execute()
+                        (
+                            supabase
+                            .table("products")
+                            .update({
+                                "name": new_name,
+                                "category": new_category,
+                                "description": new_description,
+                                "price": new_price,
+                                "cost": new_cost,
+                                "stock": new_stock,
+                                "icon": new_icon,
+                                "available": new_available
+                            })
+                            .eq(
+                                "id",
+                                int(selected_id)
+                            )
+                            .execute()
+                        )
 
                         st.success(
                             "Product updated."
@@ -1358,12 +1462,16 @@ if st.session_state.get("page_override") == "admin":
 
                     else:
 
-                        supabase.table(
-                            "products"
-                        ).delete().eq(
-                            "id",
-                            int(selected_id)
-                        ).execute()
+                        (
+                            supabase
+                            .table("products")
+                            .delete()
+                            .eq(
+                                "id",
+                                int(selected_id)
+                            )
+                            .execute()
+                        )
 
                         st.success(
                             "Product deleted."
@@ -1599,12 +1707,15 @@ if st.session_state.get("page_override") == "admin":
 # CUSTOMER HEADER
 # =========================================================
 
-st.markdown("""
-<div class="hero">
-    <h1>☕ Coffee With Us</h1>
-    <p>Your coffee. Your moment. Your way.</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="hero">
+        <h1>☕ Coffee With Us</h1>
+        <p>Your coffee. Your moment. Your way.</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # =========================================================
@@ -1680,8 +1791,7 @@ if page == "🏠 Order":
     if selected_category != "All":
 
         products = products[
-            products["category"] ==
-            selected_category
+            products["category"] == selected_category
         ]
 
     if products.empty:
@@ -1715,31 +1825,25 @@ if page == "🏠 Order":
 
                 with cols[index % 3]:
 
+                    # =================================================
+                    # PRODUCT CARD
+                    # NO RAW HTML HERE
+                    # =================================================
+
                     st.markdown(
-                        f"""
-                        <div class="product-card">
-                            <div class="product-icon">
-                                {product['icon']}
-                            </div>
+                        f"### {product['icon']} {product['name']}"
+                    )
 
-                            <h3>
-                                {product['name']}
-                            </h3>
+                    st.write(
+                        product["description"]
+                    )
 
-                            <p>
-                                {product['description']}
-                            </p>
+                    st.markdown(
+                        f"**Rs. {float(product['price']):,.0f}**"
+                    )
 
-                            <div class="price">
-                                Rs. {float(product['price']):,.0f}
-                            </div>
-
-                            <p class="small-text">
-                                {int(product['stock'])} available
-                            </p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
+                    st.caption(
+                        f"{int(product['stock'])} available"
                     )
 
                     quantity = st.number_input(
@@ -1764,10 +1868,12 @@ if page == "🏠 Order":
                         )
 
                         current_quantity = (
-                            st.session_state.cart.get(
+                            st.session_state.cart
+                            .get(
                                 product_id,
                                 {}
-                            ).get(
+                            )
+                            .get(
                                 "quantity",
                                 0
                             )
@@ -1943,8 +2049,7 @@ elif page == "🛒 Cart":
         with summary_col1:
 
             st.write(
-                f"Subtotal: "
-                f"**Rs. {subtotal:,.0f}**"
+                f"Subtotal: **Rs. {subtotal:,.0f}**"
             )
 
             st.write(
@@ -2199,14 +2304,18 @@ elif page == "🛒 Cart":
                                         item["quantity"]
                                     )
 
-                                    supabase.table(
-                                        "products"
-                                    ).update({
-                                        "stock": new_stock
-                                    }).eq(
-                                        "id",
-                                        int(product_id)
-                                    ).execute()
+                                    (
+                                        supabase
+                                        .table("products")
+                                        .update({
+                                            "stock": new_stock
+                                        })
+                                        .eq(
+                                            "id",
+                                            int(product_id)
+                                        )
+                                        .execute()
+                                    )
 
                             st.session_state.last_order = (
                                 order_code
