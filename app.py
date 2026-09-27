@@ -56,6 +56,10 @@ st.markdown(
         color: white !important;
     }
 
+    /* =====================================================
+       HERO
+       ===================================================== */
+
     .hero {
         background: linear-gradient(135deg, #3b2117, #8b5e3c);
         padding: 45px 35px;
@@ -74,25 +78,51 @@ st.markdown(
         opacity: 0.9;
     }
 
+    /* =====================================================
+       PRODUCT CARD
+       ===================================================== */
+
     .product-card {
         background: white;
-        padding: 20px;
+        padding: 22px;
         border-radius: 18px;
         border: 1px solid #eadfd6;
-        margin-bottom: 15px;
-        box-shadow: 0 5px 18px rgba(60, 35, 20, 0.06);
-        min-height: 275px;
+        margin-bottom: 10px;
+        box-shadow: 0 5px 18px rgba(60, 35, 20, 0.08);
+        min-height: 300px;
     }
 
     .product-icon {
         font-size: 48px;
         text-align: center;
+        margin-bottom: 8px;
     }
 
-    .price {
+    .product-name {
+        font-size: 22px;
+        font-weight: 700;
+        color: #3b2117;
+        margin-bottom: 6px;
+    }
+
+    .product-description {
+        color: #777;
+        font-size: 14px;
+        min-height: 42px;
+        margin-bottom: 12px;
+    }
+
+    .product-price {
         font-size: 22px;
         font-weight: bold;
         color: #7b4a2f;
+        margin-bottom: 3px;
+    }
+
+    .product-stock {
+        color: #777;
+        font-size: 14px;
+        margin-bottom: 12px;
     }
 
     .category-title {
@@ -103,13 +133,22 @@ st.markdown(
         margin-bottom: 10px;
     }
 
+    /* =====================================================
+       ORDER BOX
+       ===================================================== */
+
     .order-box {
         background: white;
         padding: 20px;
         border-radius: 18px;
         border: 1px solid #eadfd6;
         margin-bottom: 15px;
+        box-shadow: 0 5px 18px rgba(60, 35, 20, 0.05);
     }
+
+    /* =====================================================
+       STATUS
+       ===================================================== */
 
     .status-box {
         padding: 15px;
@@ -121,12 +160,17 @@ st.markdown(
         color: #5c321e;
     }
 
+    /* =====================================================
+       METRICS
+       ===================================================== */
+
     .metric-box {
         background: white;
         padding: 20px;
         border-radius: 18px;
         border: 1px solid #eadfd6;
         text-align: center;
+        box-shadow: 0 5px 18px rgba(60, 35, 20, 0.05);
     }
 
     .metric-value {
@@ -139,6 +183,10 @@ st.markdown(
         color: #777;
     }
 
+    /* =====================================================
+       RECEIPT
+       ===================================================== */
+
     .receipt {
         background: white;
         padding: 30px;
@@ -150,6 +198,10 @@ st.markdown(
         color: #777;
         font-size: 14px;
     }
+
+    /* =====================================================
+       BUTTONS
+       ===================================================== */
 
     div.stButton > button {
         border-radius: 10px;
@@ -278,6 +330,7 @@ def sqlite_has_data():
 def migrate_sqlite_to_supabase():
 
     try:
+
         existing_products = (
             supabase
             .table("products")
@@ -312,12 +365,14 @@ def migrate_sqlite_to_supabase():
         # -------------------------------------------------
 
         try:
+
             cur.execute("SELECT * FROM products")
             rows = cur.fetchall()
 
             product_data = []
 
             for row in rows:
+
                 product_data.append({
                     "id": int(row["id"]),
                     "name": row["name"],
@@ -331,6 +386,7 @@ def migrate_sqlite_to_supabase():
                 })
 
             if product_data:
+
                 (
                     supabase
                     .table("products")
@@ -346,12 +402,14 @@ def migrate_sqlite_to_supabase():
         # -------------------------------------------------
 
         try:
+
             cur.execute("SELECT * FROM orders")
             rows = cur.fetchall()
 
             order_data = []
 
             for row in rows:
+
                 order_data.append({
                     "id": int(row["id"]),
                     "order_code": row["order_code"],
@@ -370,6 +428,7 @@ def migrate_sqlite_to_supabase():
                 })
 
             if order_data:
+
                 (
                     supabase
                     .table("orders")
@@ -385,18 +444,21 @@ def migrate_sqlite_to_supabase():
         # -------------------------------------------------
 
         try:
+
             cur.execute("SELECT * FROM settings")
             rows = cur.fetchall()
 
             settings_data = []
 
             for row in rows:
+
                 settings_data.append({
                     "key": row["key"],
                     "value": str(row["value"])
                 })
 
             if settings_data:
+
                 (
                     supabase
                     .table("settings")
@@ -778,6 +840,10 @@ if st.session_state.get(
 
         st.stop()
 
+    # -----------------------------------------------------
+    # ADMIN HEADER
+    # -----------------------------------------------------
+
     st.markdown(
         """
         <div class="hero">
@@ -848,67 +914,27 @@ if st.session_state.get(
         c1, c2, c3, c4 = st.columns(4)
 
         with c1:
-
-            st.markdown(
-                f"""
-                <div class="metric-box">
-                    <div class="metric-value">
-                        Rs. {revenue:,.0f}
-                    </div>
-                    <div class="metric-label">
-                        Today's Revenue
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                "Today's Revenue",
+                f"Rs. {revenue:,.0f}"
             )
 
         with c2:
-
-            st.markdown(
-                f"""
-                <div class="metric-box">
-                    <div class="metric-value">
-                        Rs. {profit:,.0f}
-                    </div>
-                    <div class="metric-label">
-                        Today's Profit
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                "Today's Profit",
+                f"Rs. {profit:,.0f}"
             )
 
         with c3:
-
-            st.markdown(
-                f"""
-                <div class="metric-box">
-                    <div class="metric-value">
-                        {order_count}
-                    </div>
-                    <div class="metric-label">
-                        Today's Orders
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                "Today's Orders",
+                order_count
             )
 
         with c4:
-
-            st.markdown(
-                f"""
-                <div class="metric-box">
-                    <div class="metric-value">
-                        {low_stock}
-                    </div>
-                    <div class="metric-label">
-                        Low Stock Items
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                "Low Stock Items",
+                low_stock
             )
 
         st.write("")
@@ -1056,31 +1082,43 @@ if st.session_state.get(
 
             for _, order in filtered.iterrows():
 
-                st.markdown(
-                    f"""
-                    <div class="order-box">
-                        <h3>
-                            🧾 {order['order_code']}
-                        </h3>
+                # Clean Streamlit card
+                with st.container(border=True):
 
-                        <b>Customer:</b>
-                        {order['customer_name']}<br>
+                    st.subheader(
+                        f"🧾 {order['order_code']}"
+                    )
 
-                        <b>Phone:</b>
-                        {order['phone'] or 'Not provided'}<br>
+                    col1, col2 = st.columns(2)
 
-                        <b>Order Time:</b>
-                        {order['created_at']}<br>
+                    with col1:
 
-                        <b>Total:</b>
-                        Rs. {float(order['total']):,.0f}<br>
+                        st.write(
+                            f"**Customer:** "
+                            f"{order['customer_name']}"
+                        )
 
-                        <b>Current Status:</b>
-                        {order['status']}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                        st.write(
+                            f"**Phone:** "
+                            f"{order['phone'] or 'Not provided'}"
+                        )
+
+                    with col2:
+
+                        st.write(
+                            f"**Order Time:** "
+                            f"{order['created_at']}"
+                        )
+
+                        st.write(
+                            f"**Total:** "
+                            f"Rs. {float(order['total']):,.0f}"
+                        )
+
+                    st.write(
+                        f"**Current Status:** "
+                        f"{order['status']}"
+                    )
 
                 st.write("**Items:**")
 
@@ -1808,13 +1846,9 @@ if page == "🏠 Order":
 
         for category, category_products in grouped:
 
+            # Category title
             st.markdown(
-                f"""
-                <div class="category-title">
-                    {category}
-                </div>
-                """,
-                unsafe_allow_html=True
+                f"## {category}"
             )
 
             cols = st.columns(3)
@@ -1826,98 +1860,115 @@ if page == "🏠 Order":
                 with cols[index % 3]:
 
                     # =================================================
-                    # PRODUCT CARD
-                    # NO RAW HTML HERE
+                    # WHITE ROUNDED PRODUCT CARD
                     # =================================================
 
-                    st.markdown(
-                        f"### {product['icon']} {product['name']}"
-                    )
+                    with st.container(border=True):
 
-                    st.write(
-                        product["description"]
-                    )
-
-                    st.markdown(
-                        f"**Rs. {float(product['price']):,.0f}**"
-                    )
-
-                    st.caption(
-                        f"{int(product['stock'])} available"
-                    )
-
-                    quantity = st.number_input(
-                        "Quantity",
-                        min_value=1,
-                        max_value=min(
-                            int(product["stock"]),
-                            20
-                        ),
-                        value=1,
-                        key=f"qty_{product['id']}"
-                    )
-
-                    if st.button(
-                        f"Add {product['name']}",
-                        key=f"add_{product['id']}",
-                        use_container_width=True
-                    ):
-
-                        product_id = int(
-                            product["id"]
+                        # Emoji
+                        st.markdown(
+                            f"""
+                            <div class="product-icon">
+                                {product['icon']}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
                         )
 
-                        current_quantity = (
-                            st.session_state.cart
-                            .get(
-                                product_id,
-                                {}
-                            )
-                            .get(
-                                "quantity",
-                                0
-                            )
+                        # Product name
+                        st.markdown(
+                            f"### {product['name']}"
                         )
 
-                        if (
-                            current_quantity +
-                            quantity
-                        ) > int(product["stock"]):
+                        # Description
+                        st.caption(
+                            product["description"]
+                        )
 
-                            st.error(
-                                "You cannot add more than "
-                                "the available stock."
+                        # Price
+                        st.markdown(
+                            f"**Rs. {float(product['price']):,.0f}**"
+                        )
+
+                        # Stock
+                        st.caption(
+                            f"{int(product['stock'])} available"
+                        )
+
+                        # Quantity
+                        quantity = st.number_input(
+                            "Quantity",
+                            min_value=1,
+                            max_value=min(
+                                int(product["stock"]),
+                                20
+                            ),
+                            value=1,
+                            key=f"qty_{product['id']}"
+                        )
+
+                        # Add button
+                        if st.button(
+                            f"Add to Cart",
+                            key=f"add_{product['id']}",
+                            use_container_width=True
+                        ):
+
+                            product_id = int(
+                                product["id"]
                             )
 
-                        else:
+                            current_quantity = (
+                                st.session_state.cart
+                                .get(
+                                    product_id,
+                                    {}
+                                )
+                                .get(
+                                    "quantity",
+                                    0
+                                )
+                            )
 
-                            if product_id in st.session_state.cart:
+                            if (
+                                current_quantity +
+                                quantity
+                            ) > int(product["stock"]):
 
-                                st.session_state.cart[
-                                    product_id
-                                ]["quantity"] += quantity
+                                st.error(
+                                    "You cannot add more than "
+                                    "the available stock."
+                                )
 
                             else:
 
-                                st.session_state.cart[
-                                    product_id
-                                ] = {
-                                    "id": product_id,
-                                    "name": product["name"],
-                                    "price": float(
-                                        product["price"]
-                                    ),
-                                    "cost": float(
-                                        product["cost"]
-                                    ),
-                                    "quantity": quantity,
-                                    "icon": product["icon"]
-                                }
+                                if product_id in st.session_state.cart:
 
-                            st.success(
-                                f"{quantity} × "
-                                f"{product['name']} added!"
-                            )
+                                    st.session_state.cart[
+                                        product_id
+                                    ]["quantity"] += quantity
+
+                                else:
+
+                                    st.session_state.cart[
+                                        product_id
+                                    ] = {
+                                        "id": product_id,
+                                        "name": product["name"],
+                                        "price": float(
+                                            product["price"]
+                                        ),
+                                        "cost": float(
+                                            product["cost"]
+                                        ),
+                                        "quantity": quantity,
+                                        "icon": product["icon"]
+                                    }
+
+                                st.success(
+                                    f"{quantity} × "
+                                    f"{product['name']} added!"
+                                )
 
 
 # =========================================================
@@ -1962,25 +2013,21 @@ elif page == "🛒 Cart":
                 item["quantity"]
             )
 
-            st.markdown(
-                f"""
-                <div class="order-box">
-                    <h3>
-                        {item['icon']} {item['name']}
-                    </h3>
+            # =================================================
+            # CART ITEM CARD
+            # =================================================
 
-                    <p>
-                        Rs. {item['price']:,.0f}
-                        × {item['quantity']}
-                        =
-                        <b>
-                            Rs. {item_total:,.0f}
-                        </b>
-                    </p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            with st.container(border=True):
+
+                st.subheader(
+                    f"{item['icon']} {item['name']}"
+                )
+
+                st.write(
+                    f"Rs. {item['price']:,.0f} × "
+                    f"{item['quantity']} = "
+                    f"**Rs. {item_total:,.0f}**"
+                )
 
             col1, col2, col3 = st.columns(3)
 
@@ -2064,19 +2111,9 @@ elif page == "🛒 Cart":
 
         with summary_col2:
 
-            st.markdown(
-                f"""
-                <div class="metric-box">
-                    <div class="metric-label">
-                        TOTAL
-                    </div>
-
-                    <div class="metric-value">
-                        Rs. {total:,.0f}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                "TOTAL",
+                f"Rs. {total:,.0f}"
             )
 
         st.divider()
@@ -2327,38 +2364,33 @@ elif page == "🛒 Cart":
                                 "🎉 Your order has been placed!"
                             )
 
-                            st.markdown(
-                                f"""
-                                <div class="receipt">
-                                    <h2>
-                                        ☕ Coffee With Us
-                                    </h2>
+                            # Clean receipt
+                            with st.container(border=True):
 
-                                    <h3>
-                                        Order Confirmed
-                                    </h3>
+                                st.markdown(
+                                    "## ☕ Coffee With Us"
+                                )
 
-                                    <p>
-                                        Your Order ID is:
-                                    </p>
+                                st.markdown(
+                                    "### Order Confirmed"
+                                )
 
-                                    <h1>
-                                        {order_code}
-                                    </h1>
+                                st.write(
+                                    "Your Order ID is:"
+                                )
 
-                                    <p>
-                                        Please save this Order ID
-                                        to track your order.
-                                    </p>
+                                st.title(
+                                    order_code
+                                )
 
-                                    <h2>
-                                        Total:
-                                        Rs. {total:,.0f}
-                                    </h2>
-                                </div>
-                                """,
-                                unsafe_allow_html=True
-                            )
+                                st.info(
+                                    "Please save this Order ID "
+                                    "to track your order."
+                                )
+
+                                st.subheader(
+                                    f"Total: Rs. {total:,.0f}"
+                                )
 
 
 # =========================================================
@@ -2674,12 +2706,6 @@ elif page == "📦 Track Order":
 
 st.divider()
 
-st.markdown(
-    """
-    <div style="text-align:center; color:#777;">
-        ☕ <b>Coffee With Us</b><br>
-        Fresh coffee • Fresh moments • Fresh memories
-    </div>
-    """,
-    unsafe_allow_html=True
+st.caption(
+    "☕ Coffee With Us • Fresh coffee • Fresh moments • Fresh memories"
 )
